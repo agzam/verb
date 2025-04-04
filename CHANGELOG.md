@@ -1,10 +1,52 @@
 # Verb Changelog
-## **main** (MELPA)
-- Fixed LF being used instead of CRLF in multipart boundaries.
-- When sending a request, include the HTTP method in the message displayed.
-- The `verb-json-get` function now accepts negative integer arguments for accessing list elements.
+## **3.1.0** - 2025-03-18 (MELPA & MELPA Stable)
+- Added support for `Verb-Map-Response` heading property. This allows for calling functions automatically with the HTTP response data, when it is received.
+- Added the `verb-util-form-url-encode` helper function for use with `application/x-www-form-urlencoded`.
+- Fixed error occuring when maxium number of redirections set by `url-max-redirections` was reached.
+- Added support for `Verb-Max-Redirections` heading property.
+- The `verb-headers-get` function now accepts an instance of `verb-response` as first argument.
+- Added Verb-specific handler for Org's <kbd>C-c C-c</kbd> contextual key.
 
-## **2.15.0** - 2021-11-03 (MELPA Stable)
+## **3.0.0** - 2024-12-23
+Breaking changes:
+- Updated behaviour for `verb-send-request-on-point-*` functions when dealing with one or more Babel source blocks under a heading. Now, the actual source block on point will be used to build the request, instead of simply the first one. See [issue #53](https://github.com/federicotdn/verb/issues/53).
+- Defining a URL origin (scheme + host + port) in a request specification will now make Verb ignore all parent headings when computing what request to send. In other words, defining a new URL origin effectively creates a new tree of request specifications.
+- Removed support for the `url-queue` backend.
+- Removed all Emacs 25-specific code.
+- Escape sequences ('\\') contained in strings resulting from evaluating code tags will not be interepreted, i.e. all contents will be taken as literal.
+- Removed `verb-view-log` alias.
+- Renamed `verb-show-log` to `verb-util-show-log`.
+- All `verb-log-*` variables containing faces are no longer part of the package's public API.
+
+New features / improvements:
+- Added support for `Verb-Proxy` heading property.
+- Improved `*Verb Log*` buffer formatting.
+- Headers can now contain code tags that expand to multiple lines.
+- URLs can now span multiple lines, place '\\' at the end of the URL line to continue it in the next one. Leading whitespace in the additional lines will be skipped.
+- Added new function `verb-body-lf-to-crlf` designed for use with requests sending multipart data.
+- Added new `Verb-Prelude` heading property, which can be used to specify Emacs Lisp or JSON contents to load variables from, before performing requests. Contents can come optionally from files, e.g. `.el` or `.json`.
+- Added `verb-shell`, `verb-url` and `verb-unix-epoch` utility functions.
+- Allow using Org [hyperlinks](https://orgmode.org/guide/Hyperlinks.html) in URLs, for example: `get [[http://example.com][my example]]`.
+
+## **2.16.0** - 2024-03-02
+- Fixed LF being used instead of CRLF in multipart boundaries.
+- When sending a request, include the HTTP method and path in the message displayed on the minibuffer.
+- The `verb-json-get` function now accepts negative integer arguments for accessing list elements.
+- Changed default binding of `verb-send-request-on-point-no-window` to <kbd>C-c C-r C-<return></kbd>.
+- Allow using single- or multi-line lambda expressions for `Verb-Map-Request`.
+- The `verb-auto-kill-response-buffers` customizable variable can now be set to an integer. This will cause all response buffers to be killed when a request is sent, except the N most recent ones.
+- Calling `verb-set-var` interactively with a prefix argument (<kbd>C-u</kbd>) will copy the variable value to the kill ring.
+- The current value of a Verb variable will be shown in the minibuffer when the point is moved over a code tag containing only `(verb-var xyz)`.
+- `verb-set-var` now has its own input history.
+- Dropped support for Emacs 25. Emacs 26.3 is now the minimum supported version. Verb may still work partially or completely on Emacs 25, but this may change without prior warning.
+- Added default binding for `verb-show-vars`: <kbd>C-c C-r C-x</kbd>.
+- Added new export format `websocat`.
+- Added new function `verb-export-request-on-point-websocat`.
+- Removed default keybindings for all `verb-export-request-on-point-*` functions, and made export function querying faster in `verb-export-request-on-point`.
+- Added additional advice to url.el to prevent it from dropping the response body when the `Content-Encoding` is set to `gzip` but the contents themselves are not actually compressed.
+- Added support for using `org-babel-expand-src-block` on `verb` Babel source blocks.
+
+## **2.15.0** - 2021-11-03
 - Fixed font locking on indented Babel source blocks.
 - Added `verb-part` and `verb-boundary` functions, to facilitate building requests using `multipart/form-data`.
 

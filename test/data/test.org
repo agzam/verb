@@ -4,9 +4,12 @@
 # Make some requests against the test server (server.py) The requests
 # are executed programatically by loading this file, moving to a
 # heading and executing verb-execute-request-on-point. See verb-test.el
-# for more details.
+# for more details (`server-test' macro).
 
 template http://localhost:8000
+
+** org-hyperlink
+get [[http://localhost:8000/basic][some hyperlink description]]
 
 ** basic
 get /basic
@@ -66,6 +69,12 @@ get ?foo=bar
 ** redirect-302
 get /redirect-302
 
+** redirect-302-max-redirections-0
+:properties:
+:Verb-Max-Redirections: 0
+:end:
+get /redirect-302
+
 ** redirect-301
 get /redirect-301
 
@@ -103,11 +112,13 @@ get /image.png
 post /body-md5
 Content-Type: image/png
 
-{{(verb-read-file "image.png" 'binary)}}
+{{(verb-read-file "test.png" 'binary)}}
 ** upload-binary
 post /body-md5
 
 {{(verb-read-file "test.bin" 'binary)}}
+** not-compressed
+get /not-compressed
 ** set-cookies
 get /set-cookies?foo=bar&abc=123
 ** get-cookies
@@ -127,9 +138,75 @@ Accept: application/json
 Content-Type: application/json; charset=utf-8
 
 語
+** form-urlencoded
+post /form-urlencoded
+Content-Type: application/x-www-form-urlencoded
+
+hello=world&foo=%7B%22test%22%3A123%7D
+** form-urlencoded-with-helper
+post /form-urlencoded
+Content-Type: application/x-www-form-urlencoded
+
+{{(verb-util-form-url-encode '(("hello" . "world") ("foo" . "{\"test\":123}")))}}
+** multipart
+:properties:
+:Verb-Map-Request: verb-body-lf-to-crlf
+:end:
+post /multipart
+Content-Type: multipart/form-data; boundary={{(verb-boundary)}}
+
+{{(verb-part "foo1")}}
+Content-Type: text/plain
+
+bar1
+{{(verb-part "foo2")}}
+Content-Type: application/xml
+
+bar2
+{{(verb-part)}}
+** prelude-elisp
+:properties:
+:Verb-Prelude: test.el
+:end:
+get /echo-args?{{(verb-var foo)}}={{(verb-var bar)}}
+** prelude-elisp-inline
+:properties:
+:Verb-Prelude+: (setq prelude-inline-1 "abc")
+:Verb-Prelude+: (setq prelude-inline-2 "321")
+:end:
+get /echo-args?{{prelude-inline-1}}={{prelude-inline-2}}
+** prelude-json
+:properties:
+:Verb-Prelude: test.json
+:end:
+get /echo-args?{{(verb-var foo)}}={{(verb-var bar)}}
+** prelude-json-inline
+:properties:
+:Verb-Prelude+: {
+:Verb-Prelude+:     "json-inline-var": "jsoninline"
+:Verb-Prelude+: }
+:end:
+get /echo-args?value={{(verb-var json-inline-var)}}
+** map-response
+:properties:
+:Verb-Map-Response: (lambda (r) (oset r body "xyz") (setq some-global-var-mp 101010) r)
+:end:
+get /basic-json
+** map-response-upcase
+:properties:
+:Verb-Map-Response: map-response-upcase-fn
+:end:
+get /basic
+** map-response-error
+:properties:
+:Verb-Map-Response: (lambda (r) 1)
+:end:
+get /basic-json
 * connection-fail-port
+# (Do not add request specs under this heading!)
 # Valid host but invalid port
 get http://localhost:1234/test
 * connection-fail-host
+# (Do not add request specs under this heading!)
 # Invalid host
 get http://foobarfoobarfoobarfoobarabcdefg/test

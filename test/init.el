@@ -1,9 +1,5 @@
 ;; init.el --- Manual testing setup for Verb  -*- lexical-binding: t; -*-
 
-;; Set up macOS stuff
-(when (eq system-type 'darwin)
-  (setq mac-command-modifier 'meta))
-
 ;; Build Verb autoloads and load them
 (require 'package)
 (package-generate-autoloads "verb" ".")
@@ -24,7 +20,7 @@
 (setq org-confirm-babel-evaluate nil)
 
 ;; Set up Verb
-(setq verb-auto-kill-response-buffers t)
+(setq verb-auto-kill-response-buffers 3)
 
 ;; Keybindings
 (with-eval-after-load 'org (define-key org-mode-map (kbd "C-c C-r") verb-command-map))

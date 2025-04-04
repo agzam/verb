@@ -1,13 +1,13 @@
 ;;; ob-verb.el --- Babel integration for Verb  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021  Federico Tedin
+;; Copyright (C) 2023  Federico Tedin
 
 ;; Author: Federico Tedin <federicotedin@gmail.com>
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.15.0
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Version: 3.1.0
+;; Package-Requires: ((emacs "26.3"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -66,6 +66,35 @@ The default value for OPERATION is \"send\"."
       (_
        (user-error "Invalid value for :op argument: %s" op)))))
 
+(defun ob-verb-expand-body (body params)
+  "Expand BODY according to PARAMS, return the expanded body.
+This simply exports the block as verb and returns it.
+
+This function is called by `org-babel-expand-src-block'.
+
+See `org-babel-execute:verb' for details of PARAMS."
+  (let* ((processed-params (org-babel-process-params params))
+         (vars (mapcar #'cdr (seq-filter (lambda (x) (eq (car x) :var))
+                                         processed-params)))
+         (rs (verb--request-spec-from-babel-src-block (point) body vars)))
+    (ob-verb--export-to-verb rs)))
+
+;; Added to ensure linter succeeds.
+(define-obsolete-function-alias
+  'org-babel-expand-body:verb
+  'ob-verb-expand-body
+  "2024-02-10")
+
+(defun ob-verb--export-to-verb (rs)
+  "Export a request spec RS to Verb format.
+Like `verb--export-to-verb' but returns string instead of a
+buffer."
+  (save-window-excursion
+    (with-current-buffer (verb--export-to-verb rs t)
+      (let ((result (verb--buffer-string-no-properties)))
+        (kill-buffer)
+        result))))
+
 (defun ob-verb--export-request (rs name)
   "Export the request specified by the selected Babel source block.
 RS should contain the request spec extracted from the source block.
@@ -75,13 +104,11 @@ with the contents of the exported request.
 Called when :op `export' is passed to `org-babel-execute:verb'."
   (pcase name
     ("verb"
-     (save-window-excursion
-       (with-current-buffer (verb--export-to-verb rs)
-         (let ((result (verb--buffer-string-no-properties)))
-           (kill-buffer)
-           result))))
+     (ob-verb--export-to-verb rs))
     ("curl"
      (verb--export-to-curl rs t t))
+    ("websocat"
+     (verb--export-to-websocat rs t t))
     (_
      (user-error "Invalid export function: %s" name))))
 
@@ -102,14 +129,6 @@ variable.
 
 Called when :op `send' is passed to `org-babel-execute:verb'.  An
 optional argument may follow `send'."
-  (when (eq verb-url-retrieve-function #'url-queue-retrieve)
-    ;; TODO: url-queue isn't working here because of the use of
-    ;; `sleep-for'. Maybe we could use `ert-run-idle-timers' but that
-    ;; sounds like a bad idea.
-    (user-error "%s"
-                (concat "Using `url-queue-retrieve' with"
-                        " Babel is currently not supported\n"
-                        "Please try again using `url-retrieve'")))
   (when (and part (not (member part '("get-body" "get-headers"))))
     (user-error "Invalid send argument: %s" part))
   (let* ((start (time-to-seconds))
